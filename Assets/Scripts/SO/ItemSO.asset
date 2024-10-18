@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d59608734e43944aaa72c274554b4b4, type: 3}
+  m_Name: ItemSO
+  m_EditorClassIdentifier: 
+  items:
+  - name: Archer
+    attack: 3
+    health: 4
+    sprite: {fileID: 21300000, guid: 3324d3116a7464e458dcbd45a75bd28f, type: 3}
+    percent: 8
+  - name: Alchemist
+    attack: 1
+    health: 3
+    sprite: {fileID: 21300000, guid: 2b7866d7b1e3ec14c86b37d828ea5e73, type: 3}
+    percent: 15
+  - name: Warrior
+    attack: 1
+    health: 7
+    sprite: {fileID: 21300000, guid: 3fb5c693a52d052428dc436fd60cd9fd, type: 3}
+    percent: 10
+  - name: Wizard
+    attack: 4
+    health: 5
+    sprite: {fileID: 21300000, guid: ee26400f9a53fe04f9e85f219cbf181f, type: 3}
+    percent: 10
