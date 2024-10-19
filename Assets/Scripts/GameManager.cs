@@ -26,10 +26,15 @@ public class GameManager : MonoBehaviour
 
     void UISetup()
     {
+        if (notificationPanel == null)
+        {
+            Debug.Log("No UI");
+            return;
+        }
         notificationPanel.ScaleZero();
-        resultPanel.ScaleZero();
-        titlePanel.Active(true);
-        cameraEffect.SetGrayScale(false);
+        //resultPanel.ScaleZero();
+        //titlePanel.Active(true);
+        //cameraEffect.SetGrayScale(false);
     }
 
     void Update()

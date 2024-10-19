@@ -152,7 +152,7 @@ MonoBehaviour:
   m_text: Demon
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 3651e21a87014204fab313dc305d2cbd, type: 2}
-  m_sharedMaterial: {fileID: 5192663707654360675, guid: 3651e21a87014204fab313dc305d2cbd, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: a18df5eb2df622541bdc81eea43ab606, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -286,7 +286,7 @@ MonoBehaviour:
   m_text: 20
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 3651e21a87014204fab313dc305d2cbd, type: 2}
-  m_sharedMaterial: {fileID: 5192663707654360675, guid: 3651e21a87014204fab313dc305d2cbd, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: a18df5eb2df622541bdc81eea43ab606, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -524,7 +524,7 @@ MonoBehaviour:
   m_text: 20
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 3651e21a87014204fab313dc305d2cbd, type: 2}
-  m_sharedMaterial: {fileID: 5192663707654360675, guid: 3651e21a87014204fab313dc305d2cbd, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: a18df5eb2df622541bdc81eea43ab606, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -602,6 +602,7 @@ GameObject:
   - component: {fileID: 7060661998683114843}
   - component: {fileID: 5601464889773467879}
   - component: {fileID: 3866689616249905091}
+  - component: {fileID: 4106698548070858380}
   m_Layer: 0
   m_Name: Card
   m_TagString: Untagged
@@ -725,3 +726,73 @@ MonoBehaviour:
     pos: {x: 0, y: 0, z: 0}
     rot: {x: 0, y: 0, z: 0, w: 0}
     scale: {x: 0, y: 0, z: 0}
+--- !u!60 &4106698548070858380
+PolygonCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8040935836249641930}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 10.8, y: 19.2}
+    newSize: {x: 1, y: 1}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Points:
+    m_Paths:
+    - - {x: 5.4, y: -7.0099998}
+      - {x: 5.4, y: 7.08}
+      - {x: 5.33, y: 7.3399997}
+      - {x: 5.02, y: 7.56}
+      - {x: -4.8599997, y: 7.56}
+      - {x: -4.9, y: 7.5499997}
+      - {x: -5.0099998, y: 7.52}
+      - {x: -5.08, y: 7.49}
+      - {x: -5.14, y: 7.45}
+      - {x: -5.2599998, y: 7.33}
+      - {x: -5.33, y: 7.24}
+      - {x: -5.38, y: 7.14}
+      - {x: -5.4, y: 7.02}
+      - {x: -5.4, y: -7.14}
+      - {x: -5.2, y: -7.47}
+      - {x: -5.02, y: -7.5299997}
+      - {x: -4.88, y: -7.5699997}
+      - {x: -2.4463806, y: -7.569999}
+      - {x: -1.7968915, y: -9.518811}
+      - {x: 1.8261425, y: -9.445024}
+      - {x: 2.5344188, y: -7.569999}
+      - {x: 4.8399997, y: -7.5699997}
+      - {x: 5.0299997, y: -7.5499997}
+      - {x: 5.3199997, y: -7.3199997}
+      - {x: 5.38, y: -7.14}
+  m_UseDelaunayMesh: 0

@@ -29,7 +29,7 @@ public class CardManager : MonoBehaviour
     Card selectCard;
     bool isMyCardDrag;
     bool onMyCardArea;
-    enum ECardState { Nothing, CanMouseOver, CanMouseDrag }
+    enum ECardState { Nothing, CanMouseOver, CanMouseDrag } // 카드 조작 가능 여부
     int myPutCount;
 
 
@@ -260,6 +260,7 @@ public class CardManager : MonoBehaviour
     {
         if (isEnlarge)
         {
+            // 마우스를 올릴 때의 카드 위치와 크기
             Vector3 enlargePos = new Vector3(card.originPRS.pos.x, -4.8f, -10f);
             card.MoveTransform(new PRS(enlargePos, Utils.QI, Vector3.one * 3.5f), false);
         }
