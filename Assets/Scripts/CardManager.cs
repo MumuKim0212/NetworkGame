@@ -90,15 +90,17 @@ public class CardManager : MonoBehaviour
         SetECardState();
     }
 
-	void AddCard(bool isMine)
+    public void AddCard(bool isMine)
     {
         var cardObject = Instantiate(cardPrefab, cardSpawnPoint.position, Utils.QI);
         var card = cardObject.GetComponent<Card>();
         card.Setup(PopItem(), isMine);
         (isMine ? myCards : otherCards).Add(card);
 
-        SetOriginOrder(isMine); 
+        SetOriginOrder(isMine);
         CardAlignment(isMine);
+
+        NetworkManager.Inst.SendMessage(new NetworkMessage { Type = "ADD_CARD", IsMine = isMine });
     }
 
     void SetOriginOrder(bool isMine)
@@ -165,7 +167,7 @@ public class CardManager : MonoBehaviour
         return results;
     }
 
-    public bool TryPutCard(bool isMine) 
+    public bool TryPutCard(bool isMine)
     {
         if (isMine && myPutCount >= 1)
             return false;
@@ -188,9 +190,10 @@ public class CardManager : MonoBehaviour
                 myPutCount++;
             }
             CardAlignment(isMine);
+            NetworkManager.Inst.SendMessage(new NetworkMessage { Type = "PUT_CARD", IsMine = isMine });
             return true;
         }
-        else 
+        else
         {
             targetCards.ForEach(x => x.GetComponent<Order>().SetMostFrontOrder(false));
             CardAlignment(isMine);
@@ -261,8 +264,8 @@ public class CardManager : MonoBehaviour
         if (isEnlarge)
         {
             // 마우스를 올릴 때의 카드 위치와 크기
-            Vector3 enlargePos = new Vector3(card.originPRS.pos.x, -4.8f, -10f);
-            card.MoveTransform(new PRS(enlargePos, Utils.QI, Vector3.one * 3.5f), false);
+            Vector3 enlargePos = new Vector3(card.originPRS.pos.x, -4.8f, -4f);
+            card.MoveTransform(new PRS(enlargePos, Utils.QI, Vector3.one * 1.3f), false);
         }
         else
             card.MoveTransform(card.originPRS, false);

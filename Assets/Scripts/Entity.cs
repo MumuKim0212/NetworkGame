@@ -60,7 +60,12 @@ public class Entity : MonoBehaviour
     void OnMouseDown()
     {
         if (isMine)
+        {
             EntityManager.Inst.EntityMouseDown(this);
+            Debug.Log("IS Mine 클릭");
+
+        }
+        Debug.Log("클릭");
     }
 
     void OnMouseUp()

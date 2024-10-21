@@ -47,3 +47,6 @@ TagManager:
   - name: Card
     uniqueID: 4065516097
     locked: 0
+  - name: Damage
+    uniqueID: 435008245
+    locked: 0

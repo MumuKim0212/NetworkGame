@@ -27,7 +27,7 @@ public class Utils
 		get
 		{
 			Vector3 result = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-			result.z = -10;
+			result.z = -5;
 			return result;
 		}
 	}

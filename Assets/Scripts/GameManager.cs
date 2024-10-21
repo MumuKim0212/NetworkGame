@@ -32,9 +32,9 @@ public class GameManager : MonoBehaviour
             return;
         }
         notificationPanel.ScaleZero();
-        //resultPanel.ScaleZero();
-        //titlePanel.Active(true);
-        //cameraEffect.SetGrayScale(false);
+        resultPanel.ScaleZero();
+        titlePanel.Active(true);
+        cameraEffect.SetGrayScale(false);
     }
 
     void Update()
@@ -67,6 +67,7 @@ public class GameManager : MonoBehaviour
 
     public void StartGame()
     {
+        NetworkManager.Inst.SendMessage(new NetworkMessage { Type = "START_GAME" });
         StartCoroutine(TurnManager.Inst.StartGameCo());
     }
 

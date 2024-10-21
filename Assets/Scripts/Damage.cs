@@ -29,7 +29,7 @@ public class Damage : MonoBehaviour
         damageTMP.text = $"-{damage}";
 
         Sequence sequence = DOTween.Sequence()
-            .Append(transform.DOScale(Vector3.one * 1.8f, 0.5f).SetEase(Ease.InOutBack))
+            .Append(transform.DOScale(Vector3.one * 9.84f, 0.5f).SetEase(Ease.InOutBack))
             .AppendInterval(1.2f)
             .Append(transform.DOScale(Vector3.zero, 0.5f).SetEase(Ease.InOutBack))
             .OnComplete(() => Destroy(gameObject));
