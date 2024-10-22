@@ -56,5 +56,5 @@ MonoBehaviour:
   - name: H.Warrior
     attack: 2
     health: 4
-    sprite: {fileID: 21300000, guid: c44859f77db4f9f49a31e31bec17ad0b, type: 3}
+    sprite: {fileID: 21300000, guid: 588cfd29b958b1341ae507ef64ee5402, type: 3}
     percent: 10

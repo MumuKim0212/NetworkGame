@@ -133,7 +133,7 @@ public class Network : MonoBehaviour
                 switch (message.MyType)
                 {
                     case Type.ATTACK:
-                        EntityManager.Inst.Attack(message.Card.name, message.AttackTarget.name);
+                        //EntityManager.Inst.Attack(message.Card.name, message.AttackTarget.name);
                         break;
 
                     case Type.PUT_CARD:

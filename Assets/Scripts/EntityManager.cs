@@ -76,7 +76,7 @@ public class EntityManager : MonoBehaviour
             var defenders = new List<Entity>(myEntities);
             defenders.Add(myBossEntity);
             int rand = Random.Range(0, defenders.Count);
-            Attack(attacker.name, defenders[rand].name);
+            Attack(attacker, defenders[rand]);
 
             if (TurnManager.Inst.isLoading)
                 yield break;
@@ -129,7 +129,7 @@ public class EntityManager : MonoBehaviour
         myEntities.RemoveAt(MyEmptyEntityIndex);
         EntityAlignment(true);
     }
-     
+
     // 스폰 성공 여부
     public bool SpawnEntity(bool isMine, Item item, Vector3 spawnPos)
     {
@@ -156,8 +156,7 @@ public class EntityManager : MonoBehaviour
         entity.Setup(item);
         EntityAlignment(isMine);
 
-        //NetworkManager.Inst.Send($"SPAWN_ENTITY, { isMine }, { item.name }, { spawnPos.x }, { spawnPos.y }, { spawnPos.z }");
-        return true;    
+        return true;
     }
 
     public void EntityMouseDown(Entity entity)
@@ -175,7 +174,7 @@ public class EntityManager : MonoBehaviour
 
         // selectEntity, targetPickEntity 둘다 존재하면 공격한다. 바로 null, null로 만든다.
         if (selectEntity && targetPickEntity && selectEntity.attackable)
-            Attack(selectEntity.name, targetPickEntity.name);
+            Attack(selectEntity, targetPickEntity);
 
         selectEntity = null;
         targetPickEntity = null;
@@ -202,19 +201,9 @@ public class EntityManager : MonoBehaviour
             targetPickEntity = null;
     }
 
-    public void Attack(string attackerName, string defenderName)
+    void Attack(Entity attacker, Entity defender)
     {
-        Entity attacker = FindEntityByName(attackerName);
-        Entity defender = FindEntityByName(defenderName);
-
-        if (attacker != null && defender != null)
-        {
-            PerformAttack(attacker, defender);
-        }
-    }
-
-    void PerformAttack(Entity attacker, Entity defender)
-    {
+        // _attacker가 _defender의 위치로 이동하다 원래 위치로 온다, 이때 order가 높다
         attacker.attackable = false;
         attacker.GetComponent<Order>().SetMostFrontOrder(true);
 
@@ -229,21 +218,6 @@ public class EntityManager : MonoBehaviour
             })
             .Append(attacker.transform.DOMove(attacker.originPos, 0.4f)).SetEase(Ease.OutSine)
             .OnComplete(() => AttackCallback(attacker, defender));
-
-        //NetworkManager.Inst.Send(new NetworkMessage
-        //{
-        //    Type = "ATTACK",
-        //    AttackerName = attacker.name,
-        //    DefenderName = defender.name
-        //});
-    }
-
-    Entity FindEntityByName(string name)
-    {
-        return myEntities.Find(e => e.name == name) ??
-               otherEntities.Find(e => e.name == name) ??
-               (myBossEntity.name == name ? myBossEntity :
-               (otherBossEntity.name == name ? otherBossEntity : null));
     }
 
     void AttackCallback(params Entity[] entities)
