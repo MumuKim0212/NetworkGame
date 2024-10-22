@@ -1366,7 +1366,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -33, y: 25.8}
+  m_AnchoredPosition: {x: -33, y: 25.800049}
   m_SizeDelta: {x: 150, y: 60}
   m_Pivot: {x: 1, y: 0}
 --- !u!1 &356909096
@@ -2189,7 +2189,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c300c362c90086b4088f158d4d862ac1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  eTurnMode: 0
+  eTurnMode: 1
   fastMode: 0
   startCardCount: 4
   isLoading: 0
@@ -5683,6 +5683,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 883d1d61ad39e0042a9cb0ae1f8031bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  network: {fileID: 0}
+  readBuffer: 
+  <PlayerName>k__BackingField: 
+  isGameStarted: 0
+  isWaitingForOpponent: 0
 --- !u!4 &1740076948
 Transform:
   m_ObjectHideFlags: 0

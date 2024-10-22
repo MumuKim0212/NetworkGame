@@ -53,6 +53,7 @@ public class TurnManager : MonoBehaviour
 
     public IEnumerator StartGameCo()
     {
+        GameSetup();
         isLoading = true;
 
         for (int i = 0; i < startCardCount; i++)
@@ -71,7 +72,7 @@ public class TurnManager : MonoBehaviour
         if (myTurn)
         {
             GameManager.Inst.Notification("나의 턴");
-            NetworkManager.Inst.SendMessage(new NetworkMessage { Type = "START_TURN", IsMine = myTurn });
+            //NetworkManager.Inst.Send(new NetworkMessage { Type = "START_TURN", IsMine = myTurn });
         }
 
         yield return delay07;
@@ -84,7 +85,7 @@ public class TurnManager : MonoBehaviour
     public void EndTurn()
     {
         myTurn = !myTurn;
-        NetworkManager.Inst.SendMessage(new NetworkMessage { Type = "END_TURN" });
+        //NetworkManager.Inst.Send(new NetworkMessage { Type = "END_TURN" });
         StartCoroutine(StartTurnCo());
     }
 }

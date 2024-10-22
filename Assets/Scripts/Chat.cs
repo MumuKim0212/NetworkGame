@@ -22,7 +22,6 @@ public class Chat : MonoBehaviour
     public void BeginServer()
     {
         network.ServerStart(10000, 10);
-
         network.name = id.text;
     }
 
@@ -35,20 +34,11 @@ public class Chat : MonoBehaviour
 
     void Update()
     {
-        if (network != null && network.IsConnect())
-        {
-            byte[] bytes = new byte[1024];
-            int length = network.Receive(ref bytes, bytes.Length);
-            if (length > 0)
-            {
-                string str = System.Text.Encoding.UTF8.GetString(bytes);
-                AddTalk(str);
-            }
-            UpdateUI();
-        }
+
     }
 
-    void AddTalk(string str)
+
+    public void AddTalk(string str)
     {
         while (list.Count >= 5)
         {
@@ -76,7 +66,7 @@ public class Chat : MonoBehaviour
         }
     }
 
-    void UpdateUI()
+    public void UpdateUI()
     {
         if (!backUI.IsActive())
         {

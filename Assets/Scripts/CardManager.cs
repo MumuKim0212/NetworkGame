@@ -5,6 +5,8 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 using DG.Tweening;
 using System.IO;
+using Newtonsoft.Json;
+using System.Text;
 
 public class CardManager : MonoBehaviour
 {
@@ -24,7 +26,7 @@ public class CardManager : MonoBehaviour
     [SerializeField] ECardState eCardState;
 
     const float cardSize = 0.7f;
-    
+
     List<Item> itemBuffer;
     Card selectCard;
     bool isMyCardDrag;
@@ -62,27 +64,27 @@ public class CardManager : MonoBehaviour
         }
     }
 
-	void Start()
-	{
+    void Start()
+    {
         SetupItemBuffer();
         TurnManager.OnAddCard += AddCard;
         TurnManager.OnTurnStarted += OnTurnStarted;
     }
 
-	void OnDestroy()
-	{
+    void OnDestroy()
+    {
         TurnManager.OnAddCard -= AddCard;
         TurnManager.OnTurnStarted -= OnTurnStarted;
     }
 
-    void OnTurnStarted(bool myTurn) 
+    void OnTurnStarted(bool myTurn)
     {
         if (myTurn)
             myPutCount = 0;
     }
 
-	void Update()
-	{
+    void Update()
+    {
         if (isMyCardDrag)
             CardDrag();
 
@@ -100,7 +102,7 @@ public class CardManager : MonoBehaviour
         SetOriginOrder(isMine);
         CardAlignment(isMine);
 
-        NetworkManager.Inst.SendMessage(new NetworkMessage { Type = "ADD_CARD", IsMine = isMine });
+        //Network.Inst.Send(new NetworkMessage($""));
     }
 
     void SetOriginOrder(bool isMine)
@@ -113,7 +115,7 @@ public class CardManager : MonoBehaviour
         }
     }
 
-    void CardAlignment(bool isMine) 
+    void CardAlignment(bool isMine)
     {
         List<PRS> originCardPRSs = new List<PRS>();
         if (isMine)
@@ -158,7 +160,7 @@ public class CardManager : MonoBehaviour
             {
                 float curve = Mathf.Sqrt(Mathf.Pow(height, 2) - Mathf.Pow(objLerps[i] - 0.5f, 2));
                 // 양수면 원의 윗부분(내카드), 음수면 원의 밑부분(상대카드)
-                curve = height >= 0 ? curve : -curve;   
+                curve = height >= 0 ? curve : -curve;
                 targetPos.y += curve;
                 targetRot = Quaternion.Slerp(leftTr.rotation, rightTr.rotation, objLerps[i]);
             }
@@ -190,7 +192,12 @@ public class CardManager : MonoBehaviour
                 myPutCount++;
             }
             CardAlignment(isMine);
-            NetworkManager.Inst.SendMessage(new NetworkMessage { Type = "PUT_CARD", IsMine = isMine });
+
+            NetworkMessage networkMessage = new NetworkMessage(Type.PUT_CARD, selectCard);
+            string message = JsonConvert.SerializeObject(networkMessage);
+            byte[] messageBytes = Encoding.UTF8.GetBytes(message);
+            Network.Inst.Send(messageBytes, messageBytes.Length);
+
             return true;
         }
         else
@@ -219,7 +226,7 @@ public class CardManager : MonoBehaviour
         EnlargeCard(false, card);
     }
 
-    public void CardMouseDown() 
+    public void CardMouseDown()
     {
         if (eCardState != ECardState.CanMouseDrag)
             return;

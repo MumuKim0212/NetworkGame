@@ -4,13 +4,18 @@ using System.Net.Sockets;
 using System.Net;
 using System.Threading;
 using UnityEngine;
+using Newtonsoft.Json;
 
 public class Network : MonoBehaviour
 {
+    public static Network Inst { get; private set; }
+    void Awake() => Inst = this;
+
+    Chat chat;
     bool bServer = false;
     bool bConnect = false;
 
-    Socket socketListen = null; 
+    Socket socketListen = null;
     Socket socket = null;
 
     Thread thread = null;
@@ -20,14 +25,14 @@ public class Network : MonoBehaviour
     Buffer bufferReceive;
 
     public string name;
-
     void Start()
     {
+        chat = GetComponent<Chat>();
         bufferSend = new Buffer();
         bufferReceive = new Buffer();
     }
 
-    public void ServerStart(int port, int backlog=10)
+    public void ServerStart(int port, int backlog = 10)
     {
         socketListen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -99,6 +104,10 @@ public class Network : MonoBehaviour
         return bConnect;
     }
 
+    public int Send(byte[] bytes)
+    {
+        return bufferSend.Write(bytes, bytes.Length);
+    }
     public int Send(byte[] bytes, int length)
     {
         return bufferSend.Write(bytes, length);
@@ -107,6 +116,41 @@ public class Network : MonoBehaviour
     public int Receive(ref byte[] bytes, int length)
     {
         return bufferReceive.Read(ref bytes, length);
+    }
+
+    private void Update()
+    {
+        if (IsConnect())
+        {
+            byte[] bytes = new byte[1024];
+            int length = Receive(ref bytes, bytes.Length);
+            NetworkMessage message;
+            if (length > 0)
+            {
+                string str = System.Text.Encoding.UTF8.GetString(bytes);
+                message = JsonConvert.DeserializeObject<NetworkMessage>(str);
+
+                switch (message.MyType)
+                {
+                    case Type.ATTACK:
+                        EntityManager.Inst.Attack(message.Card.name, message.AttackTarget.name);
+                        break;
+
+                    case Type.PUT_CARD:
+                        CardManager.Inst.TryPutCard(false);
+                        break;
+
+                    case Type.END_TURN:
+                        TurnManager.Inst.EndTurn();
+                        break;
+
+                    default:
+                        chat.AddTalk(str);
+                        chat.UpdateUI();
+                        break;
+                }
+            }
+        }
     }
 
     void SendUpdate()
@@ -136,5 +180,27 @@ public class Network : MonoBehaviour
                 bufferReceive.Write(bytes, length);
             }
         }
+    }
+}
+
+
+public enum Type { PUT_CARD, ATTACK, END_TURN, CHAT }
+public class NetworkMessage
+{
+    public Type MyType { get; set; }
+    public Card Card { get; set; }
+    public Card AttackTarget { get; set; }
+    public NetworkMessage() { }
+
+    public NetworkMessage(Type type, Card card)
+    {
+        MyType = type;
+        Card = card;
+    }
+    public NetworkMessage(Type type, Card card, Card target)
+    {
+        MyType = type;
+        Card = card;
+        AttackTarget = target;
     }
 }

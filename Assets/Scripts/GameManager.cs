@@ -67,8 +67,14 @@ public class GameManager : MonoBehaviour
 
     public void StartGame()
     {
-        NetworkManager.Inst.SendMessage(new NetworkMessage { Type = "START_GAME" });
+        // 로컬 게임 시작을 위한 메서드
         StartCoroutine(TurnManager.Inst.StartGameCo());
+    }
+
+    public void StartNetworkGame(bool isFirstPlayer)
+    {
+        // 네트워크 게임 시작을 위한 새로운 메서드
+        TurnManager.Inst.StartGame(isFirstPlayer);
     }
 
     public void Notification(string message)

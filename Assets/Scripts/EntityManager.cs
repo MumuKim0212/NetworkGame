@@ -156,7 +156,7 @@ public class EntityManager : MonoBehaviour
         entity.Setup(item);
         EntityAlignment(isMine);
 
-        NetworkManager.Inst.SendMessage($"SPAWN_ENTITY,{isMine},{item.name},{spawnPos.x},{spawnPos.y},{spawnPos.z}");
+        //NetworkManager.Inst.Send($"SPAWN_ENTITY, { isMine }, { item.name }, { spawnPos.x }, { spawnPos.y }, { spawnPos.z }");
         return true;    
     }
 
@@ -230,12 +230,12 @@ public class EntityManager : MonoBehaviour
             .Append(attacker.transform.DOMove(attacker.originPos, 0.4f)).SetEase(Ease.OutSine)
             .OnComplete(() => AttackCallback(attacker, defender));
 
-        NetworkManager.Inst.SendMessage(new NetworkMessage
-        {
-            Type = "ATTACK",
-            AttackerName = attacker.name,
-            DefenderName = defender.name
-        });
+        //NetworkManager.Inst.Send(new NetworkMessage
+        //{
+        //    Type = "ATTACK",
+        //    AttackerName = attacker.name,
+        //    DefenderName = defender.name
+        //});
     }
 
     Entity FindEntityByName(string name)
