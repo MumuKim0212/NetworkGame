@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class Chat : MonoBehaviour
 {
-    Network network;
+    NetworkManager network;
     public InputField id;
     public InputField chat;
 
@@ -15,28 +15,22 @@ public class Chat : MonoBehaviour
 
     void Start()
     {
-        network = GetComponent<Network>();
+        network = GetComponent<NetworkManager>();
         list = new List<string>();
     }
 
     public void BeginServer()
     {
-        network.ServerStart(10000, 10);
+        network.StartServer(10000, 10);
         network.name = id.text;
     }
 
     public void BeginClient()
     {
-        network.ClientStart("127.0.0.1", 10000);
+        network.StartClient("127.0.0.1", 10000);
 
         network.name = id.text;
     }
-
-    void Update()
-    {
-
-    }
-
 
     public void AddTalk(string str)
     {

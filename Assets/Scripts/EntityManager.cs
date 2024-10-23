@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
+using DG.Tweening.Core.Easing;
 
 public class EntityManager : MonoBehaviour
 {
@@ -16,7 +17,7 @@ public class EntityManager : MonoBehaviour
     [SerializeField] Entity myEmptyEntity;
     [SerializeField] Entity myBossEntity;
     [SerializeField] Entity otherBossEntity;
-
+    
     const int MAX_ENTITY_COUNT = 6;
     public bool IsFullMyEntities => myEntities.Count >= MAX_ENTITY_COUNT && !ExistMyEmptyEntity;
     bool IsFullOtherEntities => otherEntities.Count >= MAX_ENTITY_COUNT;
@@ -45,9 +46,9 @@ public class EntityManager : MonoBehaviour
     void OnTurnStarted(bool myTurn)
     {
         AttackableReset(myTurn);
-
-        if (!myTurn)
-            StartCoroutine(AICo());
+        if (GameManager.Inst.isSinglegame)
+            if (!myTurn)
+                StartCoroutine(AICo());
     }
 
     void Update()
@@ -203,6 +204,19 @@ public class EntityManager : MonoBehaviour
 
     void Attack(Entity attacker, Entity defender)
     {
+        if (TurnManager.Inst.myTurn)
+        {
+            int attackerIdx = myEntities.IndexOf(attacker);
+            int defenderIdx = otherEntities.IndexOf(defender);
+
+            NetworkProtocol network = GetComponent<NetworkProtocol>();
+            network.SendMessage(NetworkMessageType.EntityAttack, new EntityAttackData
+            {
+                AttackerIndex = attackerIdx,
+                DefenderIndex = defenderIdx
+            });
+        }
+
         // _attacker가 _defender의 위치로 이동하다 원래 위치로 온다, 이때 order가 높다
         attacker.attackable = false;
         attacker.GetComponent<Order>().SetMostFrontOrder(true);
@@ -288,4 +302,13 @@ public class EntityManager : MonoBehaviour
         targetEntites.ForEach(x => x.attackable = true);
     }
 
+    public void OnReceiveAttack(EntityAttackData attackData)
+    {
+        if (TurnManager.Inst.myTurn)
+            return;
+
+        Entity attacker = otherEntities[attackData.AttackerIndex];
+        Entity defender = myEntities[attackData.DefenderIndex];
+        Attack(attacker, defender);
+    }
 }

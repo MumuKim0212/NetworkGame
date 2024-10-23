@@ -9,6 +9,9 @@ public class TurnManager : MonoBehaviour
     public static TurnManager Inst { get; private set; }
     void Awake() => Inst = this;
 
+    [Header("References")]
+    [SerializeField] private NetworkProtocol networkProtocol;
+
     [Header("Develop")]
     [SerializeField][Tooltip("턴의 시작을 정합니다")] ETurnMode eTurnMode;
     [SerializeField][Tooltip("카드 배분이 매우 빨라집니다")] bool fastMode;
@@ -25,23 +28,32 @@ public class TurnManager : MonoBehaviour
     public static Action<bool> OnAddCard;
     public static event Action<bool> OnTurnStarted;
 
+    void Start()
+    {
+        // NetworkProtocol 컴포넌트 찾기 (Inspector에서 할당되지 않은 경우)
+        if (networkProtocol == null)
+            networkProtocol = GetComponent<NetworkProtocol>();
+    }
 
     void GameSetup()
     {
         if (fastMode)
             delay05 = new WaitForSeconds(0.05f);
 
-        switch (eTurnMode)
+        if (GameManager.Inst.isSinglegame)
         {
-            case ETurnMode.Random:
-                myTurn = Random.Range(0, 2) == 0;
-                break;
-            case ETurnMode.My:
-                myTurn = true;
-                break;
-            case ETurnMode.Other:
-                myTurn = false;
-                break;
+            switch (eTurnMode)
+            {
+                case ETurnMode.Random:
+                    myTurn = Random.Range(0, 2) == 0;
+                    break;
+                case ETurnMode.My:
+                    myTurn = true;
+                    break;
+                case ETurnMode.Other:
+                    myTurn = false;
+                    break;
+            }
         }
     }
 
@@ -72,7 +84,6 @@ public class TurnManager : MonoBehaviour
         if (myTurn)
         {
             GameManager.Inst.Notification("나의 턴");
-            //NetworkManager.Inst.Send(new NetworkMessage { Type = "START_TURN", IsMine = myTurn });
         }
 
         yield return delay07;
@@ -84,8 +95,12 @@ public class TurnManager : MonoBehaviour
 
     public void EndTurn()
     {
+        if (networkProtocol != null && myTurn)
+        {
+            networkProtocol.SendMessage(NetworkMessageType.TurnEnd);
+        }
+
         myTurn = !myTurn;
-        //NetworkManager.Inst.Send(new NetworkMessage { Type = "END_TURN" });
         StartCoroutine(StartTurnCo());
     }
 }

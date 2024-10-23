@@ -7,6 +7,7 @@ using DG.Tweening;
 using System.IO;
 using Newtonsoft.Json;
 using System.Text;
+using System.Linq;
 
 public class CardManager : MonoBehaviour
 {
@@ -24,6 +25,7 @@ public class CardManager : MonoBehaviour
     [SerializeField] Transform otherCardLeft;
     [SerializeField] Transform otherCardRight;
     [SerializeField] ECardState eCardState;
+    [SerializeField] NetworkProtocol networkProtocol;
 
     const float cardSize = 0.7f;
 
@@ -66,6 +68,8 @@ public class CardManager : MonoBehaviour
 
     void Start()
     {
+        if (!networkProtocol)
+            networkProtocol = FindObjectOfType<NetworkProtocol>();
         SetupItemBuffer();
         TurnManager.OnAddCard += AddCard;
         TurnManager.OnTurnStarted += OnTurnStarted;
@@ -101,8 +105,6 @@ public class CardManager : MonoBehaviour
 
         SetOriginOrder(isMine);
         CardAlignment(isMine);
-
-        //Network.Inst.Send(new NetworkMessage($""));
     }
 
     void SetOriginOrder(bool isMine)
@@ -183,6 +185,17 @@ public class CardManager : MonoBehaviour
 
         if (EntityManager.Inst.SpawnEntity(isMine, card.item, spawnPos))
         {
+            // 내 카드를 낼 때만 네트워크로 전송
+            if (isMine)
+            {
+                networkProtocol.SendMessage(NetworkMessageType.CardPlay, new CardPlayData
+                {
+                    CardId = card.item.name,
+                    SpawnPosX = spawnPos.x,
+                    SpawnPosY = spawnPos.y
+                });
+            }
+
             targetCards.Remove(card);
             card.transform.DOKill();
             DestroyImmediate(card.gameObject);
@@ -192,11 +205,6 @@ public class CardManager : MonoBehaviour
                 myPutCount++;
             }
             CardAlignment(isMine);
-
-            NetworkMessage networkMessage = new NetworkMessage(Type.PUT_CARD, selectCard);
-            string message = JsonConvert.SerializeObject(networkMessage);
-            byte[] messageBytes = Encoding.UTF8.GetBytes(message);
-            Network.Inst.Send(messageBytes, messageBytes.Length);
 
             return true;
         }
@@ -208,7 +216,39 @@ public class CardManager : MonoBehaviour
         }
     }
 
+    public void OnReceiveCardPlay(CardPlayData cardData)
+    {
+        Debug.Log($"Received card play: {cardData.CardId} at position ({cardData.SpawnPosX}, {cardData.SpawnPosY})");
 
+        if (TurnManager.Inst.myTurn)
+            return;
+
+        // 받은 위치에 카드 생성
+        Vector3 spawnPos = new Vector3(cardData.SpawnPosX, cardData.SpawnPosY, 0);
+        try
+        {
+            Item item = itemSO.items.First(x => x.name == cardData.CardId);
+            if (item != null)
+            {
+                if (EntityManager.Inst.SpawnEntity(false, item, spawnPos))
+                {
+                    Debug.Log($"Successfully spawned enemy card: {item.name}");
+                }
+                else
+                {
+                    Debug.LogError("Failed to spawn enemy card");
+                }
+            }
+            else
+            {
+                Debug.LogError($"Could not find item with name: {cardData.CardId}");
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Error spawning enemy card: {e.Message}");
+        }
+    }
 
     #region MyCard
 
