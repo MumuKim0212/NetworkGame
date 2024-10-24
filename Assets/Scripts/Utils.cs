@@ -17,7 +17,6 @@ public class PRS
 		this.scale = scale;
 	}
 }
-
 public class Utils
 {
 	public static Quaternion QI => Quaternion.identity;

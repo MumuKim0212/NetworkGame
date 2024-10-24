@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -25,6 +25,7 @@ public class NetworkMessage
 public class CardPlayData
 {
     public string CardId { get; set; }
+    public string EntityId { get; set; }
     public float SpawnPosX { get; set; }
     public float SpawnPosY { get; set; }
 }
@@ -32,8 +33,10 @@ public class CardPlayData
 [Serializable]
 public class EntityAttackData
 {
-    public int AttackerIndex { get; set; }
-    public int DefenderIndex { get; set; }
+    public string AttackerEntityId { get; set; }
+    public string DefenderEntityId { get; set; }
+    public bool IsAttackingBoss { get; set; }
+    public bool IsAttackingEnemyBoss { get; set; }
 }
 
 public class NetworkProtocol : MonoBehaviour
@@ -47,21 +50,19 @@ public class NetworkProtocol : MonoBehaviour
         networkManager = GetComponent<NetworkManager>();
         networkManager.OnMessageReceived += OnMessageReceived;
 
-        // ¿¬°á »óÅÂ º¯°æ ÀÌº¥Æ® Ãß°¡
+        // ì—°ê²° ìƒíƒœ ë³€ê²½ ì´ë²¤íŠ¸ ì¶”ê°€
         networkManager.OnConnected += OnConnected;
     }
 
 
-    // ¿¬°á ¿Ï·á½Ã È£ÃâµÇ´Â ¸Ş¼­µå
+    // ì—°ê²° ì™„ë£Œì‹œ í˜¸ì¶œë˜ëŠ” ë©”ì„œë“œ
     private void OnConnected()
     {
-        Debug.Log($"OnConnected - IsServer: {networkManager.IsServer()}");
         if (networkManager.IsServer())
         {
-            // ¼­¹ö´Â ÀÚ½ÅÀÇ °ÔÀÓÀ» ¸ÕÀú ½ÃÀÛÇÏ°í
-            Debug.Log("Server starting game and sending start message to client");
-            GameManager.Inst.StartNetworkGame(true);  // ¼­¹ö´Â ¼±°ø
-            // Å¬¶óÀÌ¾ğÆ®¿¡°Ô °ÔÀÓ ½ÃÀÛ ¸Ş½ÃÁö¸¦ º¸³¿
+            // ì„œë²„ëŠ” ìì‹ ì˜ ê²Œì„ì„ ë¨¼ì € ì‹œì‘í•˜ê³ 
+            GameManager.Inst.StartNetworkGame(true);  // ì„œë²„ëŠ” ì„ ê³µ
+            // í´ë¼ì´ì–¸íŠ¸ì—ê²Œ ê²Œì„ ì‹œì‘ ë©”ì‹œì§€ë¥¼ ë³´ëƒ„
             SendMessage(NetworkMessageType.GameStart, "false");
         }
     }
@@ -71,7 +72,6 @@ public class NetworkProtocol : MonoBehaviour
         string jsonMessage = System.Text.Encoding.UTF8.GetString(messageBuffer, 0, length);
         try
         {
-            Debug.Log($"Received raw message: {jsonMessage}");
             NetworkMessage message = JsonConvert.DeserializeObject<NetworkMessage>(jsonMessage);
             Debug.Log($"Received message type: {message.Type}");
             HandleMessage(message);
@@ -92,24 +92,14 @@ public class NetworkProtocol : MonoBehaviour
             case NetworkMessageType.GameStart:
                 if (!networkManager.IsServer() && !gameStarted)
                 {
-                    Debug.Log("Client received game start message, starting game");
                     gameStarted = true;
-                    GameManager.Inst.StartNetworkGame(false);  // Å¬¶óÀÌ¾ğÆ®´Â ÈÄ°ø
+                    GameManager.Inst.StartNetworkGame(false);  // í´ë¼ì´ì–¸íŠ¸ëŠ” í›„ê³µ
                 }
                 break;
 
             case NetworkMessageType.CardPlay:
-                try
-                {
-                    CardPlayData cardData = JsonConvert.DeserializeObject<CardPlayData>(message.Data);
-                    Debug.Log($"Received CardPlay message: CardId={cardData.CardId}, Pos=({cardData.SpawnPosX}, {cardData.SpawnPosY})");
-                    CardManager.Inst.OnReceiveCardPlay(cardData);
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError($"Error handling CardPlay message: {e.Message}");
-                    Debug.LogError($"Message data: {message.Data}");
-                }
+                CardPlayData cardData = JsonConvert.DeserializeObject<CardPlayData>(message.Data);
+                CardManager.Inst.OnReceiveCardPlay(cardData);
                 break;
 
             case NetworkMessageType.EntityAttack:
@@ -118,7 +108,6 @@ public class NetworkProtocol : MonoBehaviour
                 break;
 
             case NetworkMessageType.TurnEnd:
-                Debug.Log("Received TurnEnd message");
                 TurnManager.Inst.EndTurn();
                 break;
 
@@ -137,8 +126,9 @@ public class NetworkProtocol : MonoBehaviour
         string jsonMessage = JsonConvert.SerializeObject(message);
         byte[] bytes = System.Text.Encoding.UTF8.GetBytes(jsonMessage);
         networkManager.Send(bytes, bytes.Length);
-        Debug.Log($"Sending message type: {type}, Data: {message.Data}");
     }
+
+
 
     void OnDestroy()
     {

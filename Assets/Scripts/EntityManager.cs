@@ -3,22 +3,37 @@ using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
 using DG.Tweening.Core.Easing;
+using System;
+using Random = UnityEngine.Random;
 
 public class EntityManager : MonoBehaviour
 {
     public static EntityManager Inst { get; private set; }
-    void Awake() => Inst = this;
 
+    [Header("Network")]
+    [SerializeField] NetworkProtocol networkProtocol;
+
+    [Header("Prefabs")]
     [SerializeField] GameObject entityPrefab;
     [SerializeField] GameObject damagePrefab;
-    [SerializeField] List<Entity> myEntities;
-    [SerializeField] List<Entity> otherEntities;
+
+    [Header("Entities")]
     [SerializeField] GameObject TargetPicker;
     [SerializeField] Entity myEmptyEntity;
     [SerializeField] Entity myBossEntity;
     [SerializeField] Entity otherBossEntity;
-    
+    [SerializeField] List<Entity> myEntities;
+    [SerializeField] List<Entity> otherEntities;
+
     const int MAX_ENTITY_COUNT = 6;
+
+    private Dictionary<string, Entity> entityRegistry = new Dictionary<string, Entity>();
+
+    Entity selectEntity;
+    Entity targetPickEntity;
+    WaitForSeconds delay1 = new WaitForSeconds(1);
+    WaitForSeconds delay2 = new WaitForSeconds(2);
+
     public bool IsFullMyEntities => myEntities.Count >= MAX_ENTITY_COUNT && !ExistMyEmptyEntity;
     bool IsFullOtherEntities => otherEntities.Count >= MAX_ENTITY_COUNT;
     bool ExistTargetPickEntity => targetPickEntity != null;
@@ -26,21 +41,23 @@ public class EntityManager : MonoBehaviour
     int MyEmptyEntityIndex => myEntities.FindIndex(x => x == myEmptyEntity);
     bool CanMouseInput => TurnManager.Inst.myTurn && !TurnManager.Inst.isLoading;
 
-    Entity selectEntity;
-    Entity targetPickEntity;
-    WaitForSeconds delay1 = new WaitForSeconds(1);
-    WaitForSeconds delay2 = new WaitForSeconds(2);
-
-
-
-    void Start()
+    void Awake()
     {
-        TurnManager.OnTurnStarted += OnTurnStarted;
+        Inst = this;
+        Entity.OnEntitySpawned += RegisterEntity;
+        Entity.OnEntityDestroyed += UnregisterEntity;
     }
 
     void OnDestroy()
     {
         TurnManager.OnTurnStarted -= OnTurnStarted;
+    }
+
+    void Start()
+    {
+        if (networkProtocol == null)
+            networkProtocol = FindObjectOfType<NetworkProtocol>();
+        TurnManager.OnTurnStarted += OnTurnStarted;
     }
 
     void OnTurnStarted(bool myTurn)
@@ -87,6 +104,21 @@ public class EntityManager : MonoBehaviour
         TurnManager.Inst.EndTurn();
     }
 
+    private void RegisterEntity(Entity entity)
+    {
+        if (!entityRegistry.ContainsKey(entity.entityId))
+        {
+            entityRegistry[entity.entityId] = entity;
+        }
+    }
+
+    private void UnregisterEntity(Entity entity)
+    {
+        if (entityRegistry.ContainsKey(entity.entityId))
+        {
+            entityRegistry.Remove(entity.entityId);
+        }
+    }
 
     void EntityAlignment(bool isMine)
     {
@@ -102,6 +134,20 @@ public class EntityManager : MonoBehaviour
             targetEntity.MoveTransform(targetEntity.originPos, true, 0.5f);
             targetEntity.GetComponent<Order>()?.SetOriginOrder(i);
         }
+    }
+
+    public Entity FindEntityById(string entityId)
+    {
+        if (string.IsNullOrEmpty(entityId)) return null;
+
+        if (entityRegistry.TryGetValue(entityId, out Entity entity))
+        {
+            return entity;
+        }
+
+        // Registry에서 못 찾은 경우 기존 방식으로 검색
+        return myEntities.Find(e => e.entityId == entityId) ??
+               otherEntities.Find(e => e.entityId == entityId);
     }
 
     public void InsertMyEmptyEntity(float xPos)
@@ -132,7 +178,7 @@ public class EntityManager : MonoBehaviour
     }
 
     // 스폰 성공 여부
-    public bool SpawnEntity(bool isMine, Item item, Vector3 spawnPos)
+    public bool SpawnEntity(bool isMine, Item item, Vector3 spawnPos, string entityId = null)
     {
         if (isMine)
         {
@@ -148,15 +194,16 @@ public class EntityManager : MonoBehaviour
         var entityObject = Instantiate(entityPrefab, spawnPos, Utils.QI);
         var entity = entityObject.GetComponent<Entity>();
 
+        entity.isMine = isMine;
+        entity.Setup(item, entityId);  // entityId 생성
+
+        // 엔티티 리스트에 추가
         if (isMine)
             myEntities[MyEmptyEntityIndex] = entity;
         else
             otherEntities.Insert(Random.Range(0, otherEntities.Count), entity);
 
-        entity.isMine = isMine;
-        entity.Setup(item);
         EntityAlignment(isMine);
-
         return true;
     }
 
@@ -202,22 +249,27 @@ public class EntityManager : MonoBehaviour
             targetPickEntity = null;
     }
 
-    void Attack(Entity attacker, Entity defender)
+    void Attack(Entity attacker, Entity defender, bool isNetworkReceived = false)
     {
-        if (TurnManager.Inst.myTurn)
+        if (!isNetworkReceived && TurnManager.Inst.myTurn && networkProtocol != null)
         {
+            bool isAttackingEnemyBoss = (defender == otherBossEntity);  // 상대방 보스 공격
+            bool isAttackingMyBoss = (defender == myBossEntity);        // 내 보스 공격
             int attackerIdx = myEntities.IndexOf(attacker);
-            int defenderIdx = otherEntities.IndexOf(defender);
 
-            NetworkProtocol network = GetComponent<NetworkProtocol>();
-            network.SendMessage(NetworkMessageType.EntityAttack, new EntityAttackData
+            EntityAttackData attackData = new EntityAttackData
             {
-                AttackerIndex = attackerIdx,
-                DefenderIndex = defenderIdx
-            });
+                AttackerEntityId = attacker.entityId,
+                DefenderEntityId = isAttackingEnemyBoss || isAttackingMyBoss ? "" : defender.entityId,
+                IsAttackingBoss = isAttackingEnemyBoss || isAttackingMyBoss,
+                IsAttackingEnemyBoss = isAttackingEnemyBoss
+            };
+
+            if (GameManager.Inst.isSinglegame == false)
+                networkProtocol.SendMessage(NetworkMessageType.EntityAttack, attackData);
         }
 
-        // _attacker가 _defender의 위치로 이동하다 원래 위치로 온다, 이때 order가 높다
+        // 공격 애니메이션과 데미지 처리
         attacker.attackable = false;
         attacker.GetComponent<Order>().SetMostFrontOrder(true);
 
@@ -234,9 +286,9 @@ public class EntityManager : MonoBehaviour
             .OnComplete(() => AttackCallback(attacker, defender));
     }
 
+    // 죽을 사람 골라서 죽음 처리
     void AttackCallback(params Entity[] entities)
     {
-        // 죽을 사람 골라서 죽음 처리
         entities[0].GetComponent<Order>().SetMostFrontOrder(false);
 
         foreach (var entity in entities)
@@ -304,11 +356,73 @@ public class EntityManager : MonoBehaviour
 
     public void OnReceiveAttack(EntityAttackData attackData)
     {
-        if (TurnManager.Inst.myTurn)
-            return;
+        try
+        {
+            if (TurnManager.Inst.myTurn)
+                return;
 
-        Entity attacker = otherEntities[attackData.AttackerIndex];
-        Entity defender = myEntities[attackData.DefenderIndex];
-        Attack(attacker, defender);
+            // 최대 3번까지 공격자 찾기 시도
+            Entity attacker = null;
+            for (int i = 0; i < 3; i++)
+            {
+                attacker = otherEntities.Find(e => e.entityId == attackData.AttackerEntityId);
+                if (attacker != null) break;
+
+                Debug.Log($"Attempt {i + 1}: Waiting for attacker entity... ID: {attackData.AttackerEntityId}");
+                System.Threading.Thread.Sleep(100); // 잠시 대기
+            }
+
+            if (attacker == null)
+            {
+                Debug.LogError($"Could not find attacker with ID: {attackData.AttackerEntityId}");
+                LogEntityDebugInfo(); // 디버깅용 정보 출력
+                return;
+            }
+
+            Entity defender;
+            if (attackData.IsAttackingBoss)
+            {
+                defender = attackData.IsAttackingEnemyBoss ? myBossEntity : otherBossEntity;
+                if (defender == null)
+                {
+                    Debug.LogError("Target boss entity is null");
+                    return;
+                }
+            }
+            else
+            {
+                defender = myEntities.Find(e => e.entityId == attackData.DefenderEntityId);
+                if (defender == null)
+                {
+                    Debug.LogError($"Could not find defender with ID: {attackData.DefenderEntityId}");
+                    LogEntityDebugInfo();
+                    return;
+                }
+            }
+
+            Debug.Log($"Processing attack: {attacker.entityId} -> {defender.entityId}");
+            Attack(attacker, defender, true);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Error in OnReceiveAttack: {ex.Message}\n{ex.StackTrace}");
+        }
     }
+
+    // 디버깅용 엔티티 정보 출력
+    private void LogEntityDebugInfo()
+    {
+        Debug.Log("=== Current Entity Status ===");
+        Debug.Log("Other Entities:");
+        foreach (var entity in otherEntities)
+        {
+            Debug.Log($"ID: {entity.entityId}, Name: {entity.item.name}, Position: {entity.transform.position}");
+        }
+        Debug.Log("My Entities:");
+        foreach (var entity in myEntities)
+        {
+            Debug.Log($"ID: {entity.entityId}, Name: {entity.item.name}, Position: {entity.transform.position}");
+        }
+    }
+
 }

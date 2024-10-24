@@ -1,8 +1,8 @@
-using System.Collections;
+ï»¿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// Ä¡Æ®, UI, ·©Å·, °ÔÀÓ¿À¹ö
+// ì¹˜íŠ¸, UI, ë­í‚¹, ê²Œì„ì˜¤ë²„
 public class GameManager : MonoBehaviour
 {
     public static GameManager Inst { get; private set; }
@@ -11,16 +11,17 @@ public class GameManager : MonoBehaviour
     [Multiline(10)]
     [SerializeField]
     string cheatInfo =
-        "¿¡µğÅÍ ³Ñ¹öÆĞµå¿¡¼­ µ¿ÀÛ\r\n\r\n" +
-        "1. ³» Ä«µå Ãß°¡\r\n" +
-        "2. »ó´ë Ä«µå Ãß°¡\r\n" +
-        "3. ÅÏ Á¾·á\r\n" +
-        "4. »ó´ë Ä«µå ³õ±â\r\n" +
-        "5. ³» º¸½º µ¥¹ÌÁö -19\r\n" +
-        "6. »ó´ë º¸½º µ¥¹ÌÁö -19";
+        "ì—ë””í„° ë„˜ë²„íŒ¨ë“œì—ì„œ ë™ì‘\r\n\r\n" +
+        "1. ë‚´ ì¹´ë“œ ì¶”ê°€\r\n" +
+        "2. ìƒëŒ€ ì¹´ë“œ ì¶”ê°€\r\n" +
+        "3. í„´ ì¢…ë£Œ\r\n" +
+        "4. ìƒëŒ€ ì¹´ë“œ ë†“ê¸°\r\n" +
+        "5. ë‚´ ë³´ìŠ¤ ë°ë¯¸ì§€ -19\r\n" +
+        "6. ìƒëŒ€ ë³´ìŠ¤ ë°ë¯¸ì§€ -19";
     [SerializeField] NotificationPanel notificationPanel;
     [SerializeField] ResultPanel resultPanel;
     [SerializeField] TitlePanel titlePanel;
+    [SerializeField] GameObject chatButton;
     [SerializeField] CameraEffect cameraEffect;
     [SerializeField] GameObject endTurnBtn;
 
@@ -36,11 +37,6 @@ public class GameManager : MonoBehaviour
 
     void UISetup()
     {
-        if (notificationPanel == null)
-        {
-            Debug.Log("No UI");
-            return;
-        }
         notificationPanel.ScaleZero();
         resultPanel.ScaleZero();
         titlePanel.Active(true);
@@ -81,10 +77,14 @@ public class GameManager : MonoBehaviour
             EntityManager.Inst.DamageBoss(false, 19);
     }
 
+    // ë¡œì»¬ ê²Œì„ ì‹œì‘
     public void StartGame()
     {
-        // ·ÎÄÃ °ÔÀÓ ½ÃÀÛ
         isSinglegame = true;
+        UISetup();
+        titlePanel.Active(false);
+        chatButton.SetActive(true);
+        endTurnBtn.SetActive(true);
         StartCoroutine(TurnManager.Inst.StartGameCo());
     }
 
@@ -97,26 +97,15 @@ public class GameManager : MonoBehaviour
 
     private void StartGameInternal(bool isFirstPlayer)
     {
-        Debug.Log($"Starting game internal. IsFirstPlayer: {isFirstPlayer}");
-
-        // ±âÁ¸ UI ÃÊ±âÈ­
+        // ê¸°ì¡´ UI ì´ˆê¸°í™”
         UISetup();
         titlePanel.Active(false);
         endTurnBtn.SetActive(true);
+        chatButton.SetActive(true);
 
-        // NetworkProtocol ÂüÁ¶ °¡Á®¿À±â
-        NetworkProtocol networkProtocol = GetComponent<NetworkProtocol>();
+        TurnManager.Inst.myTurn = isFirstPlayer;
+        StartCoroutine(TurnManager.Inst.StartGameCo());
 
-        // ÅÏ ¸Å´ÏÀú ¼³Á¤
-        if (TurnManager.Inst != null)
-        {
-            TurnManager.Inst.myTurn = isFirstPlayer;
-            StartCoroutine(TurnManager.Inst.StartGameCo());
-        }
-        else
-        {
-            Debug.LogError("TurnManager.Inst is null!");
-        }
     }
 
     public void Notification(string message)
@@ -131,7 +120,7 @@ public class GameManager : MonoBehaviour
         yield return delay2;
 
         TurnManager.Inst.isLoading = true;
-        resultPanel.Show(isMyWin ? "½Â¸®" : "ÆĞ¹è");
+        resultPanel.Show(isMyWin ? "ìŠ¹ë¦¬" : "íŒ¨ë°°");
         cameraEffect.SetGrayScale(true);
     }
 }

@@ -30,9 +30,8 @@ public class TurnManager : MonoBehaviour
 
     void Start()
     {
-        // NetworkProtocol 컴포넌트 찾기 (Inspector에서 할당되지 않은 경우)
         if (networkProtocol == null)
-            networkProtocol = GetComponent<NetworkProtocol>();
+            networkProtocol = FindObjectOfType<NetworkProtocol>();
     }
 
     void GameSetup()

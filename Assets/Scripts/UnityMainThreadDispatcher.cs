@@ -7,17 +7,15 @@ using System.Threading.Tasks;
 public class UnityMainThreadDispatcher : MonoBehaviour
 {
     private static readonly Queue<Action> _executionQueue = new Queue<Action>();
-    private static UnityMainThreadDispatcher _instance = null;
+    public static UnityMainThreadDispatcher _instance { get; private set; }
 
-    public static UnityMainThreadDispatcher Instance()
+    void Awake()
     {
-        if (!_instance)
+        if (_instance == null)
         {
-            GameObject go = new GameObject("UnityMainThreadDispatcher");
-            _instance = go.AddComponent<UnityMainThreadDispatcher>();
-            DontDestroyOnLoad(go);
+            _instance = this;
+            DontDestroyOnLoad(this.gameObject);
         }
-        return _instance;
     }
 
     void Update()
@@ -39,14 +37,6 @@ public class UnityMainThreadDispatcher : MonoBehaviour
         }
     }
 
-    void Awake()
-    {
-        if (_instance == null)
-        {
-            _instance = this;
-            DontDestroyOnLoad(this.gameObject);
-        }
-    }
 
     void OnDestroy()
     {

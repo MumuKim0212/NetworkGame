@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using DG.Tweening;
+using System;
 
 public class Entity : MonoBehaviour
 {
-    [SerializeField] Item item;
     [SerializeField] SpriteRenderer entity;
     [SerializeField] SpriteRenderer character;
     [SerializeField] TMP_Text nameTMP;
@@ -14,6 +14,11 @@ public class Entity : MonoBehaviour
     [SerializeField] TMP_Text healthTMP;
     [SerializeField] GameObject sleepParticle;
 
+    public static event Action<Entity> OnEntitySpawned;
+    public static event Action<Entity> OnEntityDestroyed;
+
+    public Item item;
+    public string entityId;
     public int attack;
     public int health;
     public bool isMine;
@@ -26,11 +31,13 @@ public class Entity : MonoBehaviour
 
     void Start()
     {
+        OnEntitySpawned?.Invoke(this);
         TurnManager.OnTurnStarted += OnTurnStarted;
     }
 
     void OnDestroy()
     {
+        OnEntityDestroyed?.Invoke(this);
         TurnManager.OnTurnStarted -= OnTurnStarted;
     }
 
@@ -45,11 +52,11 @@ public class Entity : MonoBehaviour
         sleepParticle.SetActive(liveCount < 1);
     }
 
-    public void Setup(Item item)
+    public void Setup(Item item, string providedEntityId = null)
     {
         attack = item.attack;
         health = item.health;
-
+        entityId = providedEntityId ?? System.Guid.NewGuid().ToString();
         this.item = item;
         character.sprite = this.item.sprite;
         nameTMP.text = this.item.name;

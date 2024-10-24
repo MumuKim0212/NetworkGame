@@ -1,12 +1,9 @@
-using System;
+ï»¿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using DG.Tweening;
-using System.IO;
-using Newtonsoft.Json;
-using System.Text;
 using System.Linq;
 
 public class CardManager : MonoBehaviour
@@ -14,37 +11,47 @@ public class CardManager : MonoBehaviour
     public static CardManager Inst { get; private set; }
     void Awake() => Inst = this;
 
+    [Header("References")]
     [SerializeField] ItemSO itemSO;
     [SerializeField] GameObject cardPrefab;
-    [SerializeField] List<Card> myCards;
-    [SerializeField] List<Card> otherCards;
+    [SerializeField] NetworkProtocol networkProtocol;
+
     [SerializeField] Transform cardSpawnPoint;
     [SerializeField] Transform otherCardSpawnPoint;
     [SerializeField] Transform myCardLeft;
     [SerializeField] Transform myCardRight;
     [SerializeField] Transform otherCardLeft;
     [SerializeField] Transform otherCardRight;
+
+    [Header("Develop")]
+    [SerializeField][Tooltip("í˜„ì¬ ë‚´ ì¹´ë“œë¥¼ í™•ì¸. ì»´í¬ë„ŒíŠ¸ë¥¼ í• ë‹¹í•˜ì§€ ì•ŠìŒ")] List<Card> myCards;
+    [SerializeField][Tooltip("í˜„ì¬ ìƒëŒ€ ì¹´ë“œë¥¼ í™•ì¸. ì»´í¬ë„ŒíŠ¸ë¥¼ í• ë‹¹í•˜ì§€ ì•ŠìŒ")] List<Card> otherCards;
     [SerializeField] ECardState eCardState;
-    [SerializeField] NetworkProtocol networkProtocol;
 
+    enum ECardState { Nothing, CanMouseOver, CanMouseDrag } // ì¹´ë“œ ì¡°ì‘ ê°€ëŠ¥ ì—¬ë¶€
     const float cardSize = 0.7f;
-
     List<Item> itemBuffer;
     Card selectCard;
     bool isMyCardDrag;
     bool onMyCardArea;
-    enum ECardState { Nothing, CanMouseOver, CanMouseDrag } // Ä«µå Á¶ÀÛ °¡´É ¿©ºÎ
-    int myPutCount;
+    bool isPutCard;
 
-
-    public Item PopItem()
+    void Start()
     {
-        if (itemBuffer.Count == 0)
-            SetupItemBuffer();
+        if (!networkProtocol)
+            networkProtocol = FindObjectOfType<NetworkProtocol>();
+        SetupItemBuffer();
+        TurnManager.OnAddCard += AddCard;
+        TurnManager.OnTurnStarted += OnTurnStarted;
+    }
 
-        Item item = itemBuffer[0];
-        itemBuffer.RemoveAt(0);
-        return item;
+    void Update()
+    {
+        if (isMyCardDrag)
+            CardDrag();
+
+        DetectCardArea();
+        SetECardState();
     }
 
     void SetupItemBuffer()
@@ -66,34 +73,20 @@ public class CardManager : MonoBehaviour
         }
     }
 
-    void Start()
+    public Item PopItem()
     {
-        if (!networkProtocol)
-            networkProtocol = FindObjectOfType<NetworkProtocol>();
-        SetupItemBuffer();
-        TurnManager.OnAddCard += AddCard;
-        TurnManager.OnTurnStarted += OnTurnStarted;
-    }
+        if (itemBuffer.Count == 0)
+            SetupItemBuffer();
 
-    void OnDestroy()
-    {
-        TurnManager.OnAddCard -= AddCard;
-        TurnManager.OnTurnStarted -= OnTurnStarted;
+        Item item = itemBuffer[0];
+        itemBuffer.RemoveAt(0);
+        return item;
     }
 
     void OnTurnStarted(bool myTurn)
     {
         if (myTurn)
-            myPutCount = 0;
-    }
-
-    void Update()
-    {
-        if (isMyCardDrag)
-            CardDrag();
-
-        DetectCardArea();
-        SetECardState();
+            isPutCard = false;
     }
 
     public void AddCard(bool isMine)
@@ -142,7 +135,7 @@ public class CardManager : MonoBehaviour
 
         switch (objCount)
         {
-            // Ä«µå °£°İ Á¶Á¤
+            // ì¹´ë“œ ê°„ê²© ì¡°ì •
             case 1: objLerps = new float[] { 0.5f }; break;
             case 2: objLerps = new float[] { 0.27f, 0.73f }; break;
             case 3: objLerps = new float[] { 0.1f, 0.5f, 0.9f }; break;
@@ -157,11 +150,11 @@ public class CardManager : MonoBehaviour
         {
             var targetPos = Vector3.Lerp(leftTr.position, rightTr.position, objLerps[i]);
             var targetRot = Utils.QI;
-            // 4°³ ÀÌ»óÀÏ ¶§ ¿øÀÇ ¹æÁ¤½ÄÀ¸·Î À§Ä¡ °è»ê
+            // 4ê°œ ì´ìƒì¼ ë•Œ ì›ì˜ ë°©ì •ì‹ìœ¼ë¡œ ìœ„ì¹˜ ê³„ì‚°
             if (objCount >= 4)
             {
                 float curve = Mathf.Sqrt(Mathf.Pow(height, 2) - Mathf.Pow(objLerps[i] - 0.5f, 2));
-                // ¾ç¼ö¸é ¿øÀÇ À­ºÎºĞ(³»Ä«µå), À½¼ö¸é ¿øÀÇ ¹ØºÎºĞ(»ó´ëÄ«µå)
+                // ì–‘ìˆ˜ë©´ ì›ì˜ ìœ—ë¶€ë¶„(ë‚´ì¹´ë“œ), ìŒìˆ˜ë©´ ì›ì˜ ë°‘ë¶€ë¶„(ìƒëŒ€ì¹´ë“œ)
                 curve = height >= 0 ? curve : -curve;
                 targetPos.y += curve;
                 targetRot = Quaternion.Slerp(leftTr.rotation, rightTr.rotation, objLerps[i]);
@@ -173,7 +166,7 @@ public class CardManager : MonoBehaviour
 
     public bool TryPutCard(bool isMine)
     {
-        if (isMine && myPutCount >= 1)
+        if (isMine && isPutCard == true)
             return false;
 
         if (!isMine && otherCards.Count <= 0)
@@ -183,14 +176,16 @@ public class CardManager : MonoBehaviour
         var spawnPos = isMine ? Utils.MousePos : otherCardSpawnPoint.position;
         var targetCards = isMine ? myCards : otherCards;
 
-        if (EntityManager.Inst.SpawnEntity(isMine, card.item, spawnPos))
+        string entityId = System.Guid.NewGuid().ToString();  // ì—¬ê¸°ì„œ ID ìƒì„±
+
+        if (EntityManager.Inst.SpawnEntity(isMine, card.item, spawnPos, entityId))
         {
-            // ³» Ä«µå¸¦ ³¾ ¶§¸¸ ³×Æ®¿öÅ©·Î Àü¼Û
             if (isMine)
             {
                 networkProtocol.SendMessage(NetworkMessageType.CardPlay, new CardPlayData
                 {
                     CardId = card.item.name,
+                    EntityId = entityId,  // ID ì „ë‹¬
                     SpawnPosX = spawnPos.x,
                     SpawnPosY = spawnPos.y
                 });
@@ -202,7 +197,7 @@ public class CardManager : MonoBehaviour
             if (isMine)
             {
                 selectCard = null;
-                myPutCount++;
+                isPutCard = true;
             }
             CardAlignment(isMine);
 
@@ -218,36 +213,31 @@ public class CardManager : MonoBehaviour
 
     public void OnReceiveCardPlay(CardPlayData cardData)
     {
-        Debug.Log($"Received card play: {cardData.CardId} at position ({cardData.SpawnPosX}, {cardData.SpawnPosY})");
-
         if (TurnManager.Inst.myTurn)
             return;
 
-        // ¹ŞÀº À§Ä¡¿¡ Ä«µå »ı¼º
         Vector3 spawnPos = new Vector3(cardData.SpawnPosX, cardData.SpawnPosY, 0);
         try
         {
             Item item = itemSO.items.First(x => x.name == cardData.CardId);
-            if (item != null)
+            if (EntityManager.Inst.SpawnEntity(false, item, spawnPos, cardData.EntityId))  // ID ì „ë‹¬
             {
-                if (EntityManager.Inst.SpawnEntity(false, item, spawnPos))
-                {
-                    Debug.Log($"Successfully spawned enemy card: {item.name}");
-                }
-                else
-                {
-                    Debug.LogError("Failed to spawn enemy card");
-                }
             }
             else
             {
-                Debug.LogError($"Could not find item with name: {cardData.CardId}");
+                Debug.LogError("Failed to spawn enemy card");
             }
         }
         catch (Exception e)
         {
             Debug.LogError($"Error spawning enemy card: {e.Message}");
         }
+    }
+
+    void OnDestroy()
+    {
+        TurnManager.OnAddCard -= AddCard;
+        TurnManager.OnTurnStarted -= OnTurnStarted;
     }
 
     #region MyCard
@@ -310,7 +300,7 @@ public class CardManager : MonoBehaviour
     {
         if (isEnlarge)
         {
-            // ¸¶¿ì½º¸¦ ¿Ã¸± ¶§ÀÇ Ä«µå À§Ä¡¿Í Å©±â
+            // ë§ˆìš°ìŠ¤ë¥¼ ì˜¬ë¦´ ë•Œì˜ ì¹´ë“œ ìœ„ì¹˜ì™€ í¬ê¸°
             Vector3 enlargePos = new Vector3(card.originPRS.pos.x, -4.8f, -4f);
             card.MoveTransform(new PRS(enlargePos, Utils.QI, Vector3.one * 1.3f), false);
         }
@@ -325,10 +315,10 @@ public class CardManager : MonoBehaviour
         if (TurnManager.Inst.isLoading)
             eCardState = ECardState.Nothing;
 
-        else if (!TurnManager.Inst.myTurn || myPutCount == 1 || EntityManager.Inst.IsFullMyEntities)
+        else if (!TurnManager.Inst.myTurn || isPutCard == true || EntityManager.Inst.IsFullMyEntities)
             eCardState = ECardState.CanMouseOver;
 
-        else if (TurnManager.Inst.myTurn && myPutCount == 0)
+        else if (TurnManager.Inst.myTurn && isPutCard == false)
             eCardState = ECardState.CanMouseDrag;
     }
 

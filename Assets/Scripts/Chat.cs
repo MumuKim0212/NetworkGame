@@ -19,19 +19,6 @@ public class Chat : MonoBehaviour
         list = new List<string>();
     }
 
-    public void BeginServer()
-    {
-        network.StartServer(10000, 10);
-        network.name = id.text;
-    }
-
-    public void BeginClient()
-    {
-        network.StartClient("127.0.0.1", 10000);
-
-        network.name = id.text;
-    }
-
     public void AddTalk(string str)
     {
         while (list.Count >= 5)
@@ -45,7 +32,7 @@ public class Chat : MonoBehaviour
 
     public void SendTalk()
     {
-        string str = network.name + ": " + chat.text;
+        string str = network.ip + ": " + chat.text;
         byte[] bytes = System.Text.Encoding.UTF8.GetBytes(str);
         network.Send(bytes, bytes.Length);
 

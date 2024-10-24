@@ -14,7 +14,7 @@ public class NetworkManager : MonoBehaviour
     public delegate void MessageReceiveHandler(byte[] message, int length);
     public event MessageReceiveHandler OnMessageReceived;
 
-    public event System.Action OnConnected;
+    public event Action OnConnected;
 
     bool bServer = false;
     bool bConnect = false;
@@ -27,7 +27,7 @@ public class NetworkManager : MonoBehaviour
 
     Buffer bufferSend;
 
-    public string name;
+    public string ip;
 
     void Start()
     {
@@ -56,7 +56,7 @@ public class NetworkManager : MonoBehaviour
 
     public void StartClient()
     {
-        StartClient(name, 10000);
+        StartClient(ip, 10000);
     }
 
     public void StartServer(int port, int backlog = 10)
@@ -100,8 +100,8 @@ public class NetworkManager : MonoBehaviour
             if (StartThread())
             {
                 bConnect = true;
-                Debug.Log($"Client successfully connected to {address}:{port}");
-                UnityMainThreadDispatcher.Instance().Enqueue(() => {
+                UnityMainThreadDispatcher._instance.Enqueue(() =>
+                {
                     OnConnected?.Invoke();
                 });
                 return true;
@@ -170,7 +170,8 @@ public class NetworkManager : MonoBehaviour
             Debug.Log("Client connected successfully");
 
             // 메인 스레드에서 이벤트를 발생시키기 위해 UnityMainThreadDispatcher 사용
-            UnityMainThreadDispatcher.Instance().Enqueue(() => {
+            UnityMainThreadDispatcher._instance.Enqueue(() =>
+            {
                 OnConnected?.Invoke();
             });
         }
@@ -195,25 +196,41 @@ public class NetworkManager : MonoBehaviour
 
     void UpdateReceive()
     {
-        while (socketClient.Poll(0, SelectMode.SelectRead))
+        try
         {
-            byte[] bytes = new byte[1024];
+            while (socketClient != null && socketClient.Connected && socketClient.Poll(0, SelectMode.SelectRead))
+            {
+                byte[] bytes = new byte[1024];
 
-            int length = socketClient.Receive(bytes, bytes.Length, SocketFlags.None);
-            if (length > 0)
-            {
-                Debug.Log($"Received data length: {length}");
-                var messageBytes = new byte[length];
-                Array.Copy(bytes, messageBytes, length);
-                UnityMainThreadDispatcher.Instance().Enqueue(() => {
-                    OnMessageReceived?.Invoke(messageBytes, length);
-                });
+                int length = socketClient.Receive(bytes, bytes.Length, SocketFlags.None);
+                if (length > 0)
+                {
+                    Debug.Log($"Received data length: {length}");
+                    var messageBytes = new byte[length];
+                    Array.Copy(bytes, messageBytes, length);
+                    UnityMainThreadDispatcher._instance.Enqueue(() => {
+                        try
+                        {
+                            OnMessageReceived?.Invoke(messageBytes, length);
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogError($"Error processing received message: {e.Message}");
+                        }
+                    });
+                }
+                else if (length == 0)
+                {
+                    Debug.Log("Connection closed by remote host");
+                    Disconnect();
+                    break;
+                }
             }
-            else if (length == 0)
-            {
-                Debug.Log("Connection closed by remote host");
-                Disconnect();
-            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Error in UpdateReceive: {ex.Message}");
+            Disconnect();
         }
     }
 
